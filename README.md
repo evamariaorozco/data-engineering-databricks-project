@@ -176,6 +176,14 @@ Then `dbt docs serve` opens a local HTML site with an interactive interface cont
 
 ---
 
+## Power BI Dashboard
+
+Commercial dashboard built on the dbt marts layer: executive view, order, regional and customer analysis. KPI definitions and every page are documented in [`docs/dashboard_guide.md`](docs/dashboard_guide.md).
+
+![LH Nautical commercial dashboard](docs/dashboard/00_cover.png)
+
+---
+
 ## Demand Forecasting
 
 `forecasting/` holds the demand-forecasting analysis built on the marts. It is analysis code, not part of the
