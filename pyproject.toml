@@ -1,0 +1,57 @@
+[project]
+name = "grupo10"
+version = "0.0.1"
+authors = [
+    { name = "Eva Carrasquel" },
+    { name = "Gabriel Henrique Silva" },
+    { name = "Leonardo Pinho" },
+    { name = "Eros Gonçalves" },
+]
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    # Any dependencies for jobs and pipelines in this project can be added here
+    # See also https://docs.databricks.com/dev-tools/bundles/library-dependencies
+    #
+    # LIMITATION: for pipelines, dependencies are cached during development;
+    # add dependencies to the 'environment' section of your pipeline.yml file instead
+    "jupyterlab>=4.6.0",
+    "jupytext>=1.19.4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+    "databricks-dlt",
+    "databricks-connect>=15.4,<15.5",
+    "ipykernel",
+]
+forecasting = [
+    "databricks-sql-connector>=4.5.0",
+    "numpy>=1.26.4",
+    "pandas>=2.3.3",
+    "mlflow-skinny>=2.17.0",
+    "linearmodels>=6.0",
+    "statsmodels>=0.14.0",
+    "scikit-learn>=1.5.0",
+    "holidays>=0.58",
+    "requests>=2.32.0",
+    "matplotlib>=3.9.0",
+    "prophet>=1.1.6",
+    "cmdstanpy>=1.2.0",
+    "xgboost>=2.1.0",
+    "hyperopt>=0.2.7",
+]
+
+[project.scripts]
+main = "grupo10.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 120
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/grupo10"]

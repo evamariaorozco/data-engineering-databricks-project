@@ -1,0 +1,76 @@
+resources:
+  #Ingestion job with 4 tasks: setup runs first, then table ingestion and BCB exchange rates
+  #run in parallel; check_bcb_consecutive_failures runs only if the BCB task fails
+  jobs:
+    ingestion:
+      name: SQL Server Ingestion
+      tasks:
+
+        #Task setup - creates the catalog, schema, audit and control tables, and publishes the list of tables to ingest
+        - task_key: setup
+          notebook_task:
+            notebook_path: ../src/sqlserver_ingest_setup.ipynb
+            source: WORKSPACE
+            base_parameters:
+              catalog: "${var.catalog}"
+              schema: "${var.schema}"
+          environment_key: Default
+
+        #Task ingest_tables - runs a for_each ingestion over every table published by 'setup'
+        - task_key: ingest_tables
+          depends_on:
+            - task_key: setup         
+          for_each_task:
+            #Consumes the table list published by the 'setup' task
+            inputs: "{{tasks.setup.values.tables}}"
+            concurrency: 5
+            task:
+              task_key: ingest_single_table
+              notebook_task:
+                notebook_path: ../src/sqlserver_ingest.ipynb
+                source: WORKSPACE
+                base_parameters:
+                  #input holding the table name and its key column(s)
+                  table_config: "{{input}}"
+                  governance_config_path: "governance_config.json"
+                  catalog: "${var.catalog}"
+                  schema: "${var.schema}"
+        #Task ingest_bcb_exchange_rates - ingests the BCB USD/BRL exchange rate (series 10813); runs after 'setup'
+        - task_key: ingest_bcb_exchange_rates
+          depends_on:
+            - task_key: setup
+          notebook_task:
+            notebook_path: ../src/bcb_exchange_rates_ingest.ipynb
+            source: WORKSPACE
+            base_parameters:
+              catalog: "${var.catalog}"
+              schema: "${var.schema}"
+          environment_key: Default
+
+        #Task check_bcb_consecutive_failures - runs only if ingest_bcb_exchange_rates fails;
+        #fails on purpose on the 3rd consecutive failure to trigger the native on_failure email
+        - task_key: check_bcb_consecutive_failures
+          depends_on:
+            - task_key: ingest_bcb_exchange_rates
+          run_if: AT_LEAST_ONE_FAILED
+          notebook_task:
+            notebook_path: ../src/check_bcb_consecutive_failures.ipynb
+            source: WORKSPACE
+            base_parameters:
+              catalog: "${var.catalog}"
+              schema: "${var.schema}"
+          environment_key: Default
+          email_notifications:
+            on_failure:
+              - your-email@example.com
+
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "5"
+      max_concurrent_runs: 1
+      performance_target: PERFORMANCE_OPTIMIZED
+      queue:
+        enabled: true
+      timeout_seconds: 0
+      webhook_notifications: {}

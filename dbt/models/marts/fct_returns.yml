@@ -1,0 +1,137 @@
+version: 2
+
+models:
+  - name: fct_returns
+    description: >
+      Returns fact at returned-item grain. One record per returned order item,
+      cross-referenced to the original sale via order_item_id. Enables real net
+      revenue (sales − returns) and return-rate analysis.
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "quantity > 0"
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "unit_refund_amount >= 0"
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "refund_amount >= 0"
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "action != 'exchange' or exchange_variant_id is not null"
+    columns:
+      - name: return_sk
+        description: Surrogate key of the returns fact.
+        data_tests:
+          - not_null
+          - unique
+      - name: return_item_id
+        description: Natural key — returned item (grain of the table).
+        data_tests:
+          - not_null
+          - unique
+      - name: return_id
+        description: Parent return order identifier.
+        data_tests:
+          - not_null
+      - name: return_number
+        description: Human-readable return reference number.
+        data_tests:
+          - not_null
+      - name: order_item_id
+        description: Bridge to the original sale (fct_sales.order_item_id) — enables item-to-item net revenue.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fct_sales')
+                field: order_item_id
+              config:
+                severity: warn
+      - name: order_id
+        description: Parent order of the returned item.
+        data_tests:
+          - not_null
+      - name: customer_sk
+        description: Surrogate key to the customer dimension.
+      - name: customer_id
+        description: Customer who made the return (FK to dim_customers).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: customer_id
+              config:
+                severity: warn
+      - name: location_sk
+        description: Surrogate key to the location dimension.
+        data_tests:
+          - not_null
+      - name: location_id
+        description: Location where the return was received (FK to dim_locations).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_locations')
+                field: location_id
+              config:
+                severity: warn
+      - name: product_variant_sk
+        description: Surrogate key to the product dimension. Correctly reflects the RETURNED product, resolved directly from dim_products.
+      - name: returned_variant_id
+        description: Natural key of the product variant that was actually returned by the customer.
+        data_tests:
+          - not_null
+      - name: exchange_variant_id
+        description: Product variant being exchanged for (replacement product) — null if action is 'refund'.
+      - name: return_status
+        description: Status of the return — 'open', 'completed', or 'cancelled'.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['open', 'completed', 'cancelled']
+      - name: reason
+        description: Standardized return reason.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Cliente desistiu da compra','Compra duplicada','Item não corresponde à descrição','Produto avariado no transporte','Tamanho/cor incorretos','Produto com defeito de fábrica','Motivo não definido']
+      - name: action
+        description: Return action — 'refund' or 'exchange' (exchange references exchange_variant_id).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['refund', 'exchange']
+      - name: date_id
+        description: >
+          Return date as an integer key (yyyyMMdd), used to relate this fact to
+          dim_calendary. Invalid (null) or future dates are filtered out of the model.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_calendary')
+                field: date_id
+              config:
+                severity: warn
+      - name: returned_at
+        description: Timestamp when the item was returned.
+        data_tests:
+          - not_null
+      - name: quantity
+        description: Returned quantity (additive measure).
+        data_tests:
+          - not_null
+      - name: unit_refund_amount
+        description: Unit refund amount in the original transaction currency.
+        data_tests:
+          - not_null
+      - name: refund_amount
+        description: Line refund amount (quantity × unit_refund_amount) — additive measure.
+        data_tests:
+          - not_null

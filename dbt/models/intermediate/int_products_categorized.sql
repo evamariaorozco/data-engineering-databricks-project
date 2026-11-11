@@ -1,0 +1,89 @@
+-- Model: int_products_categorized (intermediate)
+-- Purpose: One record per product, with the category corrected via the seed_category_fix mapping
+--          (product type -> canonical category). Products whose type is not mapped fall into 'Não
+--          Classificado' with is_categorized = false.
+
+with products as (
+
+    select
+        product_id,
+        
+        -- Defensive and Scalable Rule for Name Sanitization
+        case 
+            -- 1. Catches test products and system validations
+            when lower(product_name) like '%teste%' 
+              or lower(product_name) like '%homolog%' 
+              or lower(product_name) like '%qa%' 
+            then 'Internal Item (Test)'
+            
+            -- 2. Catches unfinished/placeholder products
+            when lower(product_name) like '%tbd%' 
+              or lower(product_name) like '%a definir%' 
+            then 'Product to be Defined'
+            
+            -- 3. Catches the already mapped human error and dummy names
+            when lower(product_name) like '%joão%silva%' 
+              or lower(product_name) like '%joao%silva%' 
+              or lower(product_name) like '%genérico%'
+              or lower(product_name) like '%generico%'
+              or lower(product_name) = 'nao informado'
+              or lower(product_name) = 'asdf'
+            then 'Generic Product (Registration Error)'
+            
+            -- 4. Catches typing garbage (very short names or just spaces)
+            when length(trim(product_name)) <= 2 
+            then 'Generic Product (Invalid Name)'
+            
+            -- 5. If it is a real product, standardizes by removing leading/trailing whitespaces
+            else trim(product_name)
+        end as product_name,
+        
+        category_id,
+        brand_id
+    from {{ ref('stg_products') }}
+
+),
+
+category_fix as (
+
+    select
+        product_type,
+        correct_category,
+        is_categorized
+    from {{ ref('seed_category_fix') }}
+
+),
+
+typed as (
+
+    select
+        product_id,
+        product_name,
+        brand_id,
+
+        -- Extracts the "type": removes the number from the end of the name ("Motor de Popa 1540" -> "Motor de Popa")
+        trim(regexp_replace(product_name, '\\s*\\d+\\s*$', '')) as product_type
+
+    from products
+
+),
+
+categorized as (
+
+    select
+        t.product_id,
+        t.product_name,
+        t.product_type,
+        t.brand_id,
+
+        -- Category corrected via seed; fallback protects new/unknown types
+        coalesce(cf.correct_category, 'Não Classificado') as category_name,
+        coalesce(cf.is_categorized, false)                as is_categorized
+
+    from typed as t
+    left join category_fix as cf
+        on t.product_type = cf.product_type
+
+)
+
+select * from categorized
