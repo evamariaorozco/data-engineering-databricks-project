@@ -18,14 +18,6 @@ This is LH Nautical's Executive Dashboard, designed to address strategic pain po
 * **Return Rate** (*Taxa de Devolução*): Returned amount divided by Gross Revenue for the same period.
 
 ## 4. Page Navigation
-## 4. Page Navigation
-* **Executive View** (*Visão Executiva*): C-level summary with Revenue, Net Profit, Returns and macro YoY (Year-over-Year) growth indicators.
-* **Order Analysis** (*Análise por Pedido*): Purchase frequency, average ticket, basket size (items per order) and payment methods.
-* **Regional Analysis** (*Análise por Região*): Market share, regional strength, customer volume by state and revenue comparison.
-* **Customer Analysis** (*Análise por Clientes*): ABC curve (identification of high-value customers), retention metrics, new vs. returning customers and churn risk analysis (revenue at risk from inactive customers).
-
-Substitua por:
-## 4. Page Navigation
 
 ![Dashboard cover](dashboard/00_cover.png)
 
@@ -48,8 +40,6 @@ Market share, regional strength, customer volume by state and revenue comparison
 ABC curve (identification of high-value customers), retention metrics, new vs. returning customers and churn risk analysis (revenue at risk from inactive customers).
 
 ![Customer Analysis](dashboard/04_customer_analysis.png)
-
-Os textos são os mesmos de antes. Cada página só virou um subtítulo (###) seguido do seu print, porque uma imagem dentro de um item de lista fica desalinhada.
 
 ## 5. Support and Ownership
 For questions about business rules, bug reports on visuals or data refresh issues, please contact:
